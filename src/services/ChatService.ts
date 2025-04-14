@@ -1,6 +1,7 @@
 
 import { User } from './AuthService';
 import { EventEmitter } from '../utils/EventEmitter';
+import { SessionService } from './SessionService';
 
 export interface ChatMessage {
   id: string;
@@ -76,8 +77,7 @@ export class ChatService {
   
   // Check if user can access chat (must be creator or accepted participant)
   static canAccessChat(sessionId: string, userId: string): boolean {
-    // Get the session from SessionService
-    const { SessionService } = require('./SessionService');
+    // Get the session from SessionService directly (no require)
     const session = SessionService.getSessionById(sessionId);
     
     if (!session) return false;
@@ -91,7 +91,7 @@ export class ChatService {
   
   // Check if session has ended (for showing historical messages or active chat)
   static hasSessionEnded(sessionId: string): boolean {
-    const { SessionService } = require('./SessionService');
+    // Get the session from SessionService directly (no require)
     const session = SessionService.getSessionById(sessionId);
     
     if (!session) return true;
