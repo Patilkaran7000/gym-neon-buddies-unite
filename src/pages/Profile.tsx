@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ const Profile = () => {
   const [mySessions, setMySessions] = useState<GymSession[]>([]);
   const [joinedSessions, setJoinedSessions] = useState<GymSession[]>([]);
   const [requestedSessions, setRequestedSessions] = useState<GymSession[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const navigate = useNavigate();
   
@@ -47,6 +49,7 @@ const Profile = () => {
     if (!currentUser) return;
     
     try {
+      setLoading(true);
       const allSessions = await SessionService.getSessions();
       
       // Filter sessions created by user
@@ -69,6 +72,8 @@ const Profile = () => {
       setRequestedSessions(requested);
     } catch (error) {
       console.error('Error loading user sessions:', error);
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -134,7 +139,11 @@ const Profile = () => {
             </TabsList>
             
             <TabsContent value="my-sessions">
-              {mySessions.length > 0 ? (
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-purple"></div>
+                </div>
+              ) : mySessions.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {mySessions.map(session => (
                     <SessionCard 
@@ -160,7 +169,11 @@ const Profile = () => {
             </TabsContent>
             
             <TabsContent value="joined-sessions">
-              {joinedSessions.length > 0 ? (
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-purple"></div>
+                </div>
+              ) : joinedSessions.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {joinedSessions.map(session => (
                     <SessionCard 
@@ -186,7 +199,11 @@ const Profile = () => {
             </TabsContent>
             
             <TabsContent value="requested-sessions">
-              {requestedSessions.length > 0 ? (
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-purple"></div>
+                </div>
+              ) : requestedSessions.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {requestedSessions.map(session => (
                     <SessionCard 

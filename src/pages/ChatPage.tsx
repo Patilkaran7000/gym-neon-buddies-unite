@@ -37,34 +37,40 @@ const ChatPage = () => {
     if (!sessionId || !currentUser) return;
     
     // Get session data
-    const sessionData = SessionService.getSessionById(sessionId);
-    if (!sessionData) {
-      toast("Session not found", {
-        description: "The session you're looking for doesn't exist."
-      });
-      navigate('/');
-      return;
-    }
+    const fetchSessionData = async () => {
+      const sessionData = await SessionService.getSessionById(sessionId);
+      
+      if (!sessionData) {
+        toast("Session not found", {
+          description: "The session you're looking for doesn't exist."
+        });
+        navigate('/');
+        return;
+      }
+      
+      setSession(sessionData);
+      
+      // Check if user can access this chat
+      const canAccess = await ChatService.canAccessChat(sessionId, currentUser.id);
+      if (!canAccess) {
+        toast("Access denied", {
+          description: "You don't have access to this chat."
+        });
+        navigate('/');
+        return;
+      }
+      
+      // Check if session has ended
+      const ended = await ChatService.hasSessionEnded(sessionId);
+      setIsEnded(ended);
+      
+      // Get initial messages
+      const chatMessages = ChatService.getMessages(sessionId);
+      setMessages(chatMessages);
+      setIsLoading(false);
+    };
     
-    setSession(sessionData);
-    
-    // Check if user can access this chat
-    if (!ChatService.canAccessChat(sessionId, currentUser.id)) {
-      toast("Access denied", {
-        description: "You don't have access to this chat."
-      });
-      navigate('/');
-      return;
-    }
-    
-    // Check if session has ended
-    const ended = ChatService.hasSessionEnded(sessionId);
-    setIsEnded(ended);
-    
-    // Get initial messages
-    const chatMessages = ChatService.getMessages(sessionId);
-    setMessages(chatMessages);
-    setIsLoading(false);
+    fetchSessionData();
     
     // Subscribe to message updates
     const unsubscribe = ChatService.subscribeToMessages(sessionId, (updatedMessages) => {

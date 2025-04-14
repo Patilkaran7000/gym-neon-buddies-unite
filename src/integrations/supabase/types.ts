@@ -12,7 +12,12 @@ export type Database = {
       gym_sessions: {
         Row: {
           created_at: string
+          creator_accepted: string | null
           creator_id: string
+          creator_name: string | null
+          creator_profile_pic: string | null
+          creator_ratings: string | null
+          creator_requests: string | null
           date: string
           description: string | null
           experience_level: string
@@ -24,7 +29,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          creator_accepted?: string | null
           creator_id: string
+          creator_name?: string | null
+          creator_profile_pic?: string | null
+          creator_ratings?: string | null
+          creator_requests?: string | null
           date: string
           description?: string | null
           experience_level: string
@@ -36,7 +46,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          creator_accepted?: string | null
           creator_id?: string
+          creator_name?: string | null
+          creator_profile_pic?: string | null
+          creator_ratings?: string | null
+          creator_requests?: string | null
           date?: string
           description?: string | null
           experience_level?: string

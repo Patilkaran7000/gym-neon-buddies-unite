@@ -1,7 +1,7 @@
 
 import { User } from './AuthService';
 import { EventEmitter } from '../utils/EventEmitter';
-import { SessionService } from './SessionService';
+import { SessionService, GymSession } from './SessionService';
 
 export interface ChatMessage {
   id: string;
@@ -76,9 +76,9 @@ export class ChatService {
   }
   
   // Check if user can access chat (must be creator or accepted participant)
-  static canAccessChat(sessionId: string, userId: string): boolean {
-    // Get the session from SessionService directly (no require)
-    const session = SessionService.getSessionById(sessionId);
+  static async canAccessChat(sessionId: string, userId: string): Promise<boolean> {
+    // Get the session from SessionService directly
+    const session = await SessionService.getSessionById(sessionId);
     
     if (!session) return false;
     
@@ -90,9 +90,9 @@ export class ChatService {
   }
   
   // Check if session has ended (for showing historical messages or active chat)
-  static hasSessionEnded(sessionId: string): boolean {
-    // Get the session from SessionService directly (no require)
-    const session = SessionService.getSessionById(sessionId);
+  static async hasSessionEnded(sessionId: string): Promise<boolean> {
+    // Get the session from SessionService
+    const session = await SessionService.getSessionById(sessionId);
     
     if (!session) return true;
     

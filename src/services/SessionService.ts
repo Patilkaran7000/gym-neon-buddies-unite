@@ -291,8 +291,8 @@ export class SessionService {
       const { error } = await supabase
         .from('gym_sessions')
         .update({
-          requests: JSON.stringify(session.requests),
-          accepted: JSON.stringify(session.accepted)
+          creator_requests: JSON.stringify(session.requests),
+          creator_accepted: JSON.stringify(session.accepted)
         })
         .eq('id', sessionId);
         
@@ -332,7 +332,7 @@ export class SessionService {
       const { error } = await supabase
         .from('gym_sessions')
         .update({
-          requests: JSON.stringify(session.requests)
+          creator_requests: JSON.stringify(session.requests)
         })
         .eq('id', sessionId);
         
@@ -382,7 +382,7 @@ export class SessionService {
       const { error } = await supabase
         .from('gym_sessions')
         .update({
-          ratings: JSON.stringify(session.ratings)
+          creator_ratings: JSON.stringify(session.ratings)
         })
         .eq('id', sessionId);
         
