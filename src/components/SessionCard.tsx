@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { supabase } from '@/integrations/supabase/client';
 
 interface SessionCardProps {
   session: GymSession;
@@ -68,58 +68,86 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
       return;
     }
     
-    const success = SessionService.requestToJoin(session.id, currentUser);
-    
-    if (success) {
-      toast("Request sent!", {
-        description: "Your request to join this session has been sent",
-      });
-      setStatus('requested');
-      if (onUpdate) onUpdate();
-    } else {
+    try {
+      const success = await SessionService.requestToJoin(session.id, currentUser);
+      
+      if (success) {
+        toast("Request sent!", {
+          description: "Your request to join this session has been sent",
+        });
+        setStatus('requested');
+        if (onUpdate) onUpdate();
+      } else {
+        toast("Request failed", {
+          description: "Unable to request to join this session",
+        });
+      }
+    } catch (error) {
+      console.error('Error requesting to join:', error);
       toast("Request failed", {
-        description: "Unable to request to join this session",
+        description: "There was a problem with your request",
       });
     }
   };
   
-  const handleAccept = (userId: string) => {
+  const handleAccept = async (userId: string) => {
     if (!currentUser) return;
     
-    const success = SessionService.acceptRequest(session.id, userId, currentUser);
-    
-    if (success) {
-      toast("Request accepted!", {
-        description: "You've accepted the request to join",
+    try {
+      const success = await SessionService.acceptRequest(session.id, userId, currentUser);
+      
+      if (success) {
+        toast("Request accepted!", {
+          description: "You've accepted the request to join",
+        });
+        if (onUpdate) onUpdate();
+      }
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      toast("Accept failed", {
+        description: "There was a problem accepting the request",
       });
-      if (onUpdate) onUpdate();
     }
   };
   
-  const handleReject = (userId: string) => {
+  const handleReject = async (userId: string) => {
     if (!currentUser) return;
     
-    const success = SessionService.rejectRequest(session.id, userId, currentUser);
-    
-    if (success) {
-      toast("Request rejected", {
-        description: "You've rejected the request to join",
+    try {
+      const success = await SessionService.rejectRequest(session.id, userId, currentUser);
+      
+      if (success) {
+        toast("Request rejected", {
+          description: "You've rejected the request to join",
+        });
+        if (onUpdate) onUpdate();
+      }
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      toast("Reject failed", {
+        description: "There was a problem rejecting the request",
       });
-      if (onUpdate) onUpdate();
     }
   };
   
-  const handleRate = (rating: number) => {
+  const handleRate = async (rating: number) => {
     if (!currentUser) return;
     
-    const success = SessionService.rateSession(session.id, rating, currentUser);
-    
-    if (success) {
-      toast("Session rated!", {
-        description: `You've rated this session ${rating} stars`,
+    try {
+      const success = await SessionService.rateSession(session.id, rating, currentUser);
+      
+      if (success) {
+        toast("Session rated!", {
+          description: `You've rated this session ${rating} stars`,
+        });
+        setUserRating(rating);
+        if (onUpdate) onUpdate();
+      }
+    } catch (error) {
+      console.error('Error rating session:', error);
+      toast("Rating failed", {
+        description: "There was a problem rating the session",
       });
-      setUserRating(rating);
-      if (onUpdate) onUpdate();
     }
   };
   
@@ -127,19 +155,26 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     navigate(`/chat/${session.id}`);
   };
   
-  const handleDeleteSession = () => {
+  const handleDeleteSession = async () => {
     if (!currentUser) return;
     
-    const success = SessionService.deleteSession(session.id, currentUser);
-    
-    if (success) {
-      toast("Session deleted", {
-        description: "Your session has been permanently deleted",
-      });
-      if (onUpdate) onUpdate();
-    } else {
+    try {
+      const success = await SessionService.deleteSession(session.id, currentUser);
+      
+      if (success) {
+        toast("Session deleted", {
+          description: "Your session has been permanently deleted",
+        });
+        if (onUpdate) onUpdate();
+      } else {
+        toast("Delete failed", {
+          description: "You don't have permission to delete this session",
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting session:', error);
       toast("Delete failed", {
-        description: "You don't have permission to delete this session",
+        description: "There was a problem deleting the session",
       });
     }
   };

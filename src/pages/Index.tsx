@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import { Dumbbell, Search, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from '@/lib/toast';
 
 const HomePage = () => {
   const [sessions, setSessions] = useState<GymSession[]>([]);
@@ -16,26 +17,46 @@ const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   // Load sessions
   useEffect(() => {
-    const loadSessions = () => {
-      const allSessions = SessionService.getSessions();
-      setSessions(allSessions);
-      setFilteredSessions(allSessions);
+    const loadSessions = async () => {
+      setLoading(true);
+      try {
+        const allSessions = await SessionService.getSessions();
+        setSessions(allSessions);
+        setFilteredSessions(allSessions);
+      } catch (error) {
+        console.error('Error loading sessions:', error);
+        toast("Error loading sessions", {
+          description: "There was a problem retrieving the sessions",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
     
     loadSessions();
     
     // Check if user is logged in
-    const user = AuthService.getCurrentUser();
+    const user = AuthService.getCurrentUserSync();
     setIsLoggedIn(!!user);
     
-    // Set up localStorage change listener
-    window.addEventListener('storage', loadSessions);
+    // Set up real-time subscription to session changes
+    const sessionChanges = supabase
+      .channel('table-db-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'gym_sessions' 
+      }, (payload) => {
+        loadSessions();
+      })
+      .subscribe();
     
     return () => {
-      window.removeEventListener('storage', loadSessions);
+      supabase.removeChannel(sessionChanges);
     };
   }, []);
   
@@ -66,9 +87,22 @@ const HomePage = () => {
     setActiveFilter(activeFilter === filter ? null : filter);
   };
   
-  const handleRefresh = () => {
-    const allSessions = SessionService.getSessions();
-    setSessions(allSessions);
+  const handleRefresh = async () => {
+    setLoading(true);
+    try {
+      const allSessions = await SessionService.getSessions();
+      setSessions(allSessions);
+      toast("Sessions refreshed", {
+        description: "The latest sessions have been loaded",
+      });
+    } catch (error) {
+      console.error('Error refreshing sessions:', error);
+      toast("Refresh failed", {
+        description: "There was a problem refreshing the sessions",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   const workoutTypes = ['cardio', 'strength', 'yoga', 'hiit', 'crossfit'];
@@ -153,12 +187,17 @@ const HomePage = () => {
             variant="ghost" 
             onClick={handleRefresh}
             className="text-sm"
+            disabled={loading}
           >
-            Refresh
+            {loading ? 'Loading...' : 'Refresh'}
           </Button>
         </div>
         
-        {filteredSessions.length > 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-purple"></div>
+          </div>
+        ) : filteredSessions.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSessions.map(session => (
               <SessionCard 

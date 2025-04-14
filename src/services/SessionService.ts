@@ -1,4 +1,5 @@
 import { User } from './AuthService';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface GymSession {
   id: string;
@@ -32,18 +33,112 @@ export interface GymSession {
 export class SessionService {
   private static readonly SESSIONS_KEY = 'gym_buddy_sessions';
   
-  static getSessions(): GymSession[] {
-    const sessionsStr = localStorage.getItem(this.SESSIONS_KEY);
-    return sessionsStr ? JSON.parse(sessionsStr) : [];
+  static async getSessions(): Promise<GymSession[]> {
+    try {
+      // Fetch sessions from Supabase
+      const { data: gymSessions, error } = await supabase
+        .from('gym_sessions')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching sessions from Supabase:', error);
+        // Fall back to localStorage if Supabase query fails
+        const sessionsStr = localStorage.getItem(this.SESSIONS_KEY);
+        return sessionsStr ? JSON.parse(sessionsStr) : [];
+      }
+      
+      if (!gymSessions || gymSessions.length === 0) {
+        // If no sessions in Supabase, check localStorage
+        const sessionsStr = localStorage.getItem(this.SESSIONS_KEY);
+        const localSessions = sessionsStr ? JSON.parse(sessionsStr) : [];
+        
+        // If we have local sessions, let's migrate them to Supabase
+        if (localSessions.length > 0) {
+          console.log('Migrating local sessions to Supabase...');
+          await this.migrateLocalSessionsToSupabase(localSessions);
+          return localSessions;
+        }
+        
+        return [];
+      }
+      
+      // Map Supabase data to our GymSession interface
+      // This is a simplified mapping - you'll need to adjust based on your actual table structure
+      const mappedSessions: GymSession[] = gymSessions.map(session => ({
+        id: session.id,
+        title: session.title,
+        workoutType: session.workout_type,
+        location: session.location,
+        datetime: session.date,
+        details: session.description || '',
+        createdAt: new Date(session.created_at).getTime(),
+        creator: {
+          id: session.creator_id,
+          name: session.creator_name || 'Unknown',
+          profilePic: session.creator_profile_pic
+        },
+        requests: session.requests || [],
+        accepted: session.accepted || [],
+        ratings: session.ratings || []
+      }));
+      
+      return mappedSessions;
+      
+    } catch (error) {
+      console.error('Error in getSessions:', error);
+      // Fall back to localStorage in case of any error
+      const sessionsStr = localStorage.getItem(this.SESSIONS_KEY);
+      return sessionsStr ? JSON.parse(sessionsStr) : [];
+    }
   }
   
-  static saveSessions(sessions: GymSession[]): void {
+  private static async migrateLocalSessionsToSupabase(sessions: GymSession[]): Promise<void> {
+    for (const session of sessions) {
+      try {
+        // Convert our GymSession to Supabase format
+        const supabaseSession = {
+          id: session.id,
+          title: session.title,
+          workout_type: session.workoutType,
+          location: session.location,
+          date: session.datetime,
+          description: session.details,
+          created_at: new Date(session.createdAt).toISOString(),
+          creator_id: session.creator.id,
+          creator_name: session.creator.name,
+          creator_profile_pic: session.creator.profilePic,
+          // Store complex objects as JSON
+          requests: JSON.stringify(session.requests),
+          accepted: JSON.stringify(session.accepted),
+          ratings: JSON.stringify(session.ratings),
+          // Default values for required fields
+          experience_level: 'intermediate',
+          max_participants: 10
+        };
+        
+        const { error } = await supabase
+          .from('gym_sessions')
+          .insert(supabaseSession);
+          
+        if (error) {
+          console.error('Error migrating session to Supabase:', error);
+        }
+      } catch (e) {
+        console.error('Error in session migration:', e);
+      }
+    }
+  }
+  
+  static async saveSessions(sessions: GymSession[]): Promise<void> {
+    // Save to localStorage as backup
     localStorage.setItem(this.SESSIONS_KEY, JSON.stringify(sessions));
+    
+    // We don't do a bulk save to Supabase here as individual operations
+    // (create, update, delete) will handle their Supabase operations
   }
   
-  static createSession(session: Omit<GymSession, 'id' | 'createdAt' | 'requests' | 'accepted' | 'ratings'>, user: User): GymSession {
-    const sessions = this.getSessions();
-    
+  static async createSession(session: Omit<GymSession, 'id' | 'createdAt' | 'requests' | 'accepted' | 'ratings'>, user: User): Promise<GymSession> {
+    // First create the session object
     const newSession: GymSession = {
       ...session,
       id: crypto.randomUUID(),
@@ -53,9 +148,53 @@ export class SessionService {
       ratings: []
     };
     
-    sessions.push(newSession);
-    this.saveSessions(sessions);
-    return newSession;
+    try {
+      // Convert to Supabase format
+      const supabaseSession = {
+        id: newSession.id,
+        title: newSession.title,
+        workout_type: newSession.workoutType,
+        location: newSession.location,
+        date: newSession.datetime,
+        description: newSession.details,
+        created_at: new Date(newSession.createdAt).toISOString(),
+        creator_id: user.id,
+        creator_name: user.name,
+        creator_profile_pic: user.profilePic,
+        // Store complex objects as JSON
+        requests: JSON.stringify(newSession.requests),
+        accepted: JSON.stringify(newSession.accepted),
+        ratings: JSON.stringify(newSession.ratings),
+        // Default values for required fields
+        experience_level: 'intermediate',
+        max_participants: 10
+      };
+      
+      // Save to Supabase
+      const { error } = await supabase
+        .from('gym_sessions')
+        .insert(supabaseSession);
+        
+      if (error) {
+        console.error('Error saving session to Supabase:', error);
+      }
+      
+      // Also update local storage
+      const sessions = await this.getSessions();
+      sessions.push(newSession);
+      await this.saveSessions(sessions);
+      
+      return newSession;
+    } catch (error) {
+      console.error('Error in createSession:', error);
+      
+      // Fall back to localStorage only
+      const sessions = await this.getSessions();
+      sessions.push(newSession);
+      await this.saveSessions(sessions);
+      
+      return newSession;
+    }
   }
   
   static getSessionById(id: string): GymSession | undefined {
@@ -63,111 +202,184 @@ export class SessionService {
     return sessions.find(s => s.id === id);
   }
   
-  static requestToJoin(sessionId: string, user: User): boolean {
-    const sessions = this.getSessions();
-    const sessionIndex = sessions.findIndex(s => s.id === sessionId);
-    
-    if (sessionIndex === -1) return false;
-    
-    const session = sessions[sessionIndex];
-    
-    // Check if user is creator
-    if (session.creator.id === user.id) return false;
-    
-    // Check if user already requested or accepted
-    if (
-      session.requests.some(r => r.userId === user.id) ||
-      session.accepted.some(a => a.userId === user.id)
-    ) return false;
-    
-    session.requests.push({
-      userId: user.id,
-      name: user.name,
-      profilePic: user.profilePic
-    });
-    
-    sessions[sessionIndex] = session;
-    this.saveSessions(sessions);
-    return true;
-  }
-  
-  static acceptRequest(sessionId: string, userId: string, currentUser: User): boolean {
-    const sessions = this.getSessions();
-    const sessionIndex = sessions.findIndex(s => s.id === sessionId);
-    
-    if (sessionIndex === -1) return false;
-    
-    const session = sessions[sessionIndex];
-    
-    // Verify current user is the creator
-    if (session.creator.id !== currentUser.id) return false;
-    
-    // Find request
-    const requestIndex = session.requests.findIndex(r => r.userId === userId);
-    if (requestIndex === -1) return false;
-    
-    // Move from requests to accepted
-    const request = session.requests[requestIndex];
-    session.accepted.push(request);
-    session.requests.splice(requestIndex, 1);
-    
-    sessions[sessionIndex] = session;
-    this.saveSessions(sessions);
-    return true;
-  }
-  
-  static rejectRequest(sessionId: string, userId: string, currentUser: User): boolean {
-    const sessions = this.getSessions();
-    const sessionIndex = sessions.findIndex(s => s.id === sessionId);
-    
-    if (sessionIndex === -1) return false;
-    
-    const session = sessions[sessionIndex];
-    
-    // Verify current user is the creator
-    if (session.creator.id !== currentUser.id) return false;
-    
-    // Find and remove request
-    const requestIndex = session.requests.findIndex(r => r.userId === userId);
-    if (requestIndex === -1) return false;
-    
-    session.requests.splice(requestIndex, 1);
-    
-    sessions[sessionIndex] = session;
-    this.saveSessions(sessions);
-    return true;
-  }
-  
-  static rateSession(sessionId: string, rating: number, user: User): boolean {
-    const sessions = this.getSessions();
-    const sessionIndex = sessions.findIndex(s => s.id === sessionId);
-    
-    if (sessionIndex === -1) return false;
-    
-    const session = sessions[sessionIndex];
-    
-    // Only accepted users can rate
-    if (!session.accepted.some(a => a.userId === user.id)) return false;
-    
-    // Check if session datetime has passed
-    const sessionDate = new Date(session.datetime);
-    if (sessionDate > new Date()) return false;
-    
-    // Remove previous rating if exists
-    const existingRatingIndex = session.ratings.findIndex(r => r.userId === user.id);
-    if (existingRatingIndex !== -1) {
-      session.ratings.splice(existingRatingIndex, 1);
+  static async requestToJoin(sessionId: string, user: User): Promise<boolean> {
+    try {
+      const sessions = await this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+      
+      if (sessionIndex === -1) return false;
+      
+      const session = sessions[sessionIndex];
+      
+      // Check if user is creator
+      if (session.creator.id === user.id) return false;
+      
+      // Check if user already requested or accepted
+      if (
+        session.requests.some(r => r.userId === user.id) ||
+        session.accepted.some(a => a.userId === user.id)
+      ) return false;
+      
+      session.requests.push({
+        userId: user.id,
+        name: user.name,
+        profilePic: user.profilePic
+      });
+      
+      sessions[sessionIndex] = session;
+      await this.saveSessions(sessions);
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('gym_sessions')
+        .update({
+          requests: JSON.stringify(session.requests)
+        })
+        .eq('id', sessionId);
+        
+      if (error) {
+        console.error('Error updating requests in Supabase:', error);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in requestToJoin:', error);
+      return false;
     }
-    
-    // Add new rating
-    session.ratings.push({
-      userId: user.id,
-      rating
-    });
-    
-    sessions[sessionIndex] = session;
-    this.saveSessions(sessions);
-    return true;
+  }
+  
+  static async acceptRequest(sessionId: string, userId: string, currentUser: User): Promise<boolean> {
+    try {
+      const sessions = await this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+      
+      if (sessionIndex === -1) return false;
+      
+      const session = sessions[sessionIndex];
+      
+      // Verify current user is the creator
+      if (session.creator.id !== currentUser.id) return false;
+      
+      // Find request
+      const requestIndex = session.requests.findIndex(r => r.userId === userId);
+      if (requestIndex === -1) return false;
+      
+      // Move from requests to accepted
+      const request = session.requests[requestIndex];
+      session.accepted.push(request);
+      session.requests.splice(requestIndex, 1);
+      
+      sessions[sessionIndex] = session;
+      await this.saveSessions(sessions);
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('gym_sessions')
+        .update({
+          requests: JSON.stringify(session.requests),
+          accepted: JSON.stringify(session.accepted)
+        })
+        .eq('id', sessionId);
+        
+      if (error) {
+        console.error('Error updating acceptance in Supabase:', error);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in acceptRequest:', error);
+      return false;
+    }
+  }
+  
+  static async rejectRequest(sessionId: string, userId: string, currentUser: User): Promise<boolean> {
+    try {
+      const sessions = await this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+      
+      if (sessionIndex === -1) return false;
+      
+      const session = sessions[sessionIndex];
+      
+      // Verify current user is the creator
+      if (session.creator.id !== currentUser.id) return false;
+      
+      // Find and remove request
+      const requestIndex = session.requests.findIndex(r => r.userId === userId);
+      if (requestIndex === -1) return false;
+      
+      session.requests.splice(requestIndex, 1);
+      
+      sessions[sessionIndex] = session;
+      await this.saveSessions(sessions);
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('gym_sessions')
+        .update({
+          requests: JSON.stringify(session.requests)
+        })
+        .eq('id', sessionId);
+        
+      if (error) {
+        console.error('Error updating requests in Supabase:', error);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in rejectRequest:', error);
+      return false;
+    }
+  }
+  
+  static async rateSession(sessionId: string, rating: number, user: User): Promise<boolean> {
+    try {
+      const sessions = await this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+      
+      if (sessionIndex === -1) return false;
+      
+      const session = sessions[sessionIndex];
+      
+      // Only accepted users can rate
+      if (!session.accepted.some(a => a.userId === user.id)) return false;
+      
+      // Check if session datetime has passed
+      const sessionDate = new Date(session.datetime);
+      if (sessionDate > new Date()) return false;
+      
+      // Remove previous rating if exists
+      const existingRatingIndex = session.ratings.findIndex(r => r.userId === user.id);
+      if (existingRatingIndex !== -1) {
+        session.ratings.splice(existingRatingIndex, 1);
+      }
+      
+      // Add new rating
+      session.ratings.push({
+        userId: user.id,
+        rating
+      });
+      
+      sessions[sessionIndex] = session;
+      await this.saveSessions(sessions);
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('gym_sessions')
+        .update({
+          ratings: JSON.stringify(session.ratings)
+        })
+        .eq('id', sessionId);
+        
+      if (error) {
+        console.error('Error updating ratings in Supabase:', error);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in rateSession:', error);
+      return false;
+    }
   }
   
   static getAverageRating(session: GymSession): number {
@@ -193,20 +405,36 @@ export class SessionService {
     return true;
   }
   
-  static deleteSession(sessionId: string, currentUser: User): boolean {
-    const sessions = this.getSessions();
-    const sessionIndex = sessions.findIndex(s => s.id === sessionId);
-    
-    if (sessionIndex === -1) return false;
-    
-    const session = sessions[sessionIndex];
-    
-    // Verify current user is the creator
-    if (session.creator.id !== currentUser.id) return false;
-    
-    // Remove the session
-    sessions.splice(sessionIndex, 1);
-    this.saveSessions(sessions);
-    return true;
+  static async deleteSession(sessionId: string, currentUser: User): Promise<boolean> {
+    try {
+      const sessions = await this.getSessions();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+      
+      if (sessionIndex === -1) return false;
+      
+      const session = sessions[sessionIndex];
+      
+      // Verify current user is the creator
+      if (session.creator.id !== currentUser.id) return false;
+      
+      // Remove the session from local storage
+      sessions.splice(sessionIndex, 1);
+      await this.saveSessions(sessions);
+      
+      // Delete from Supabase
+      const { error } = await supabase
+        .from('gym_sessions')
+        .delete()
+        .eq('id', sessionId);
+        
+      if (error) {
+        console.error('Error deleting session from Supabase:', error);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in deleteSession:', error);
+      return false;
+    }
   }
 }
