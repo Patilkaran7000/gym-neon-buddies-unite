@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import CreateSession from "./pages/CreateSession";
+import ChatPage from "./pages/ChatPage";
 import NotFound from "./pages/NotFound";
 import { AuthService } from "./services/AuthService";
 
@@ -48,6 +49,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <CreateSession />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/chat/:sessionId" 
+            element={
+              <ProtectedRoute>
+                <ChatPage />
               </ProtectedRoute>
             } 
           />

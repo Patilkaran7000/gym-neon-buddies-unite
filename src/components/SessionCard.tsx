@@ -114,6 +114,10 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     }
   };
   
+  const navigateToChat = () => {
+    navigate(`/chat/${session.id}`);
+  };
+  
   const sessionDate = new Date(session.datetime);
   const isPastSession = isPast(sessionDate);
   
@@ -228,6 +232,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
             <Button 
               variant="outline" 
               className="w-full border-neon-purple text-neon-purple hover:bg-neon-purple/10 flex items-center justify-center gap-2"
+              onClick={navigateToChat}
             >
               <MessageCircle className="h-4 w-4" />
               Chat with Gym Buddies
