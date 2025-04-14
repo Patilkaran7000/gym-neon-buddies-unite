@@ -17,13 +17,24 @@ const ChatPage = () => {
   const [session, setSession] = useState<GymSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [currentUser, setCurrentUser] = useState<User | null>(AuthService.getCurrentUserSync());
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isEnded, setIsEnded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   
-  const loadData = () => {
-    if (!sessionId) return;
+  useEffect(() => {
+    // Get current user
+    const fetchCurrentUser = async () => {
+      const user = await AuthService.getCurrentUser();
+      setCurrentUser(user);
+    };
+    
+    fetchCurrentUser();
+  }, []);
+  
+  useEffect(() => {
+    if (!sessionId || !currentUser) return;
     
     // Get session data
     const sessionData = SessionService.getSessionById(sessionId);
@@ -38,7 +49,7 @@ const ChatPage = () => {
     setSession(sessionData);
     
     // Check if user can access this chat
-    if (currentUser && !ChatService.canAccessChat(sessionId, currentUser.id)) {
+    if (!ChatService.canAccessChat(sessionId, currentUser.id)) {
       toast("Access denied", {
         description: "You don't have access to this chat."
       });
@@ -50,28 +61,26 @@ const ChatPage = () => {
     const ended = ChatService.hasSessionEnded(sessionId);
     setIsEnded(ended);
     
-    // Get messages
+    // Get initial messages
     const chatMessages = ChatService.getMessages(sessionId);
     setMessages(chatMessages);
-  };
-  
-  useEffect(() => {
-    loadData();
+    setIsLoading(false);
     
-    // Set up polling for new messages (in a real app, use WebSockets)
-    const interval = setInterval(() => {
-      if (sessionId) {
-        const updatedMessages = ChatService.getMessages(sessionId);
-        setMessages(updatedMessages);
-      }
-    }, 3000);
+    // Subscribe to message updates
+    const unsubscribe = ChatService.subscribeToMessages(sessionId, (updatedMessages) => {
+      setMessages(updatedMessages);
+    });
     
-    return () => clearInterval(interval);
-  }, [sessionId, currentUser]);
+    return () => {
+      unsubscribe(); // Clean up subscription
+    };
+  }, [sessionId, currentUser, navigate]);
   
   useEffect(() => {
     // Scroll to the bottom when messages change
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
   
   const handleSendMessage = (e: React.FormEvent) => {
@@ -82,17 +91,26 @@ const ChatPage = () => {
     // Send message
     ChatService.sendMessage(sessionId, newMessage.trim(), currentUser);
     
-    // Update local messages
+    // Clear input field
     setNewMessage('');
-    
-    // Reload messages
-    const updatedMessages = ChatService.getMessages(sessionId);
-    setMessages(updatedMessages);
   };
   
   const handleBack = () => {
     navigate('/');
   };
+  
+  if (isLoading || !currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center">
+            <p>Loading chat...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   if (!session) {
     return (
@@ -100,7 +118,7 @@ const ChatPage = () => {
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-center">
-            <p>Loading chat...</p>
+            <p>Session not found</p>
           </div>
         </div>
       </div>

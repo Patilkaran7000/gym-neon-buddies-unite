@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,6 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Load user asynchronously if not already loaded
     const loadUser = async () => {
       if (!currentUser) {
         const user = await AuthService.getCurrentUser();
@@ -42,7 +40,6 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
       setStatus(SessionService.getUserSessionStatus(session, currentUser.id));
       setCanRate(SessionService.canRateSession(session, currentUser.id));
       
-      // Check if user already rated
       const userRating = session.ratings.find(r => r.userId === currentUser.id)?.rating || 0;
       setUserRating(userRating);
     }
@@ -227,7 +224,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
           </div>
         )}
         
-        {status === 'accepted' && (
+        {(status === 'accepted' || status === 'creator') && (
           <div className="mt-4">
             <Button 
               variant="outline" 

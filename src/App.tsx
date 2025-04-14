@@ -17,7 +17,7 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = !!AuthService.getCurrentUser();
+  const isAuthenticated = !!AuthService.getCurrentUserSync();
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />;

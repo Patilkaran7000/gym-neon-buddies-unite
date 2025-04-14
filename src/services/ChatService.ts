@@ -1,5 +1,6 @@
 
 import { User } from './AuthService';
+import { EventEmitter } from '../utils/EventEmitter';
 
 export interface ChatMessage {
   id: string;
@@ -11,8 +12,20 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+// Create an event emitter for message updates
+const messageEvents = new EventEmitter<{sessionId: string, messages: ChatMessage[]}>();
+
 export class ChatService {
   private static readonly MESSAGES_KEY = 'gym_buddy_messages';
+  
+  // Subscribe to message updates for a specific session
+  static subscribeToMessages(sessionId: string, callback: (messages: ChatMessage[]) => void): () => void {
+    return messageEvents.subscribe(event => {
+      if (event.sessionId === sessionId) {
+        callback(event.messages);
+      }
+    });
+  }
   
   static getMessages(sessionId: string): ChatMessage[] {
     const messagesStr = localStorage.getItem(this.MESSAGES_KEY);
@@ -21,6 +34,9 @@ export class ChatService {
   }
   
   static saveMessages(messages: ChatMessage[]): void {
+    if (messages.length === 0) return;
+    
+    const sessionId = messages[0].sessionId; // Get the session ID from the first message
     const messagesStr = localStorage.getItem(this.MESSAGES_KEY);
     const allMessages = messagesStr ? JSON.parse(messagesStr) : [];
     
@@ -33,6 +49,9 @@ export class ChatService {
     const updatedMessages = [...otherMessages, ...messages];
     
     localStorage.setItem(this.MESSAGES_KEY, JSON.stringify(updatedMessages));
+    
+    // Emit event to notify subscribers
+    messageEvents.emit({ sessionId, messages });
   }
   
   static sendMessage(sessionId: string, content: string, user: User): ChatMessage {
@@ -51,7 +70,7 @@ export class ChatService {
     const updatedMessages = [...messages, newMessage];
     this.saveMessages(updatedMessages);
     
-    // In a real app, this would trigger a real-time update
+    // Return the new message
     return newMessage;
   }
   
