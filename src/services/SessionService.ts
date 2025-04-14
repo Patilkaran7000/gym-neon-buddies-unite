@@ -92,7 +92,6 @@ export class SessionService {
   }
   
   static acceptRequest(sessionId: string, userId: string, currentUser: User): boolean {
-    // Only creator can accept requests
     const sessions = this.getSessions();
     const sessionIndex = sessions.findIndex(s => s.id === sessionId);
     
@@ -118,7 +117,6 @@ export class SessionService {
   }
   
   static rejectRequest(sessionId: string, userId: string, currentUser: User): boolean {
-    // Only creator can reject requests
     const sessions = this.getSessions();
     const sessionIndex = sessions.findIndex(s => s.id === sessionId);
     
@@ -187,13 +185,28 @@ export class SessionService {
   }
   
   static canRateSession(session: GymSession, userId: string): boolean {
-    // Only accepted users can rate
     if (!session.accepted.some(a => a.userId === userId)) return false;
     
-    // Check if session datetime has passed
     const sessionDate = new Date(session.datetime);
     if (sessionDate > new Date()) return false;
     
+    return true;
+  }
+  
+  static deleteSession(sessionId: string, currentUser: User): boolean {
+    const sessions = this.getSessions();
+    const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+    
+    if (sessionIndex === -1) return false;
+    
+    const session = sessions[sessionIndex];
+    
+    // Verify current user is the creator
+    if (session.creator.id !== currentUser.id) return false;
+    
+    // Remove the session
+    sessions.splice(sessionIndex, 1);
+    this.saveSessions(sessions);
     return true;
   }
 }

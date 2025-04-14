@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,9 +6,20 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { AuthService, User } from '@/services/AuthService';
 import { SessionService, GymSession } from '@/services/SessionService';
-import { Calendar, MapPin, Star, MessageCircle, Users } from 'lucide-react';
+import { Calendar, MapPin, Star, MessageCircle, Users, Trash2 } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SessionCardProps {
   session: GymSession;
@@ -115,6 +127,23 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     navigate(`/chat/${session.id}`);
   };
   
+  const handleDeleteSession = () => {
+    if (!currentUser) return;
+    
+    const success = SessionService.deleteSession(session.id, currentUser);
+    
+    if (success) {
+      toast("Session deleted", {
+        description: "Your session has been permanently deleted",
+      });
+      if (onUpdate) onUpdate();
+    } else {
+      toast("Delete failed", {
+        description: "You don't have permission to delete this session",
+      });
+    }
+  };
+  
   const sessionDate = new Date(session.datetime);
   const isPastSession = isPast(sessionDate);
   
@@ -133,18 +162,51 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
               <span>by {session.creator.name}</span>
             </div>
           </div>
-          <Badge 
-            className={`
-              ${session.workoutType === 'cardio' ? 'bg-orange-500' : ''}
-              ${session.workoutType === 'strength' ? 'bg-blue-600' : ''}
-              ${session.workoutType === 'yoga' ? 'bg-green-500' : ''}
-              ${session.workoutType === 'hiit' ? 'bg-purple-600' : ''}
-              ${session.workoutType === 'crossfit' ? 'bg-red-600' : ''}
-              ${!['cardio', 'strength', 'yoga', 'hiit', 'crossfit'].includes(session.workoutType) ? 'bg-gray-600' : ''}
-            `}
-          >
-            {session.workoutType}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge 
+              className={`
+                ${session.workoutType === 'cardio' ? 'bg-orange-500' : ''}
+                ${session.workoutType === 'strength' ? 'bg-blue-600' : ''}
+                ${session.workoutType === 'yoga' ? 'bg-green-500' : ''}
+                ${session.workoutType === 'hiit' ? 'bg-purple-600' : ''}
+                ${session.workoutType === 'crossfit' ? 'bg-red-600' : ''}
+                ${!['cardio', 'strength', 'yoga', 'hiit', 'crossfit'].includes(session.workoutType) ? 'bg-gray-600' : ''}
+              `}
+            >
+              {session.workoutType}
+            </Badge>
+            
+            {status === 'creator' && !isPastSession && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-7 w-7 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this gym session? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDeleteSession}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pb-2">
