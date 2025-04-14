@@ -10,6 +10,7 @@ import Navbar from '@/components/Navbar';
 import { Dumbbell, Search, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/lib/toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const HomePage = () => {
   const [sessions, setSessions] = useState<GymSession[]>([]);
@@ -56,7 +57,7 @@ const HomePage = () => {
       .subscribe();
     
     return () => {
-      supabase.removeChannel(sessionChanges);
+      sessionChanges.unsubscribe();
     };
   }, []);
   

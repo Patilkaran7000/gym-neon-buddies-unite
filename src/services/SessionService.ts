@@ -1,3 +1,4 @@
+
 import { User } from './AuthService';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -63,24 +64,30 @@ export class SessionService {
       }
       
       // Map Supabase data to our GymSession interface
-      // This is a simplified mapping - you'll need to adjust based on your actual table structure
-      const mappedSessions: GymSession[] = gymSessions.map(session => ({
-        id: session.id,
-        title: session.title,
-        workoutType: session.workout_type,
-        location: session.location,
-        datetime: session.date,
-        details: session.description || '',
-        createdAt: new Date(session.created_at).getTime(),
-        creator: {
-          id: session.creator_id,
-          name: session.creator_name || 'Unknown',
-          profilePic: session.creator_profile_pic
-        },
-        requests: session.requests || [],
-        accepted: session.accepted || [],
-        ratings: session.ratings || []
-      }));
+      const mappedSessions: GymSession[] = gymSessions.map(session => {
+        // Get complex data from metadata fields
+        const requestsData = this.tryParseJson(session.creator_requests || '[]');
+        const acceptedData = this.tryParseJson(session.creator_accepted || '[]');
+        const ratingsData = this.tryParseJson(session.creator_ratings || '[]');
+        
+        return {
+          id: session.id,
+          title: session.title,
+          workoutType: session.workout_type,
+          location: session.location,
+          datetime: session.date,
+          details: session.description || '',
+          createdAt: new Date(session.created_at).getTime(),
+          creator: {
+            id: session.creator_id,
+            name: session.creator_name || 'Unknown',
+            profilePic: session.creator_profile_pic
+          },
+          requests: requestsData,
+          accepted: acceptedData,
+          ratings: ratingsData
+        };
+      });
       
       return mappedSessions;
       
@@ -89,6 +96,15 @@ export class SessionService {
       // Fall back to localStorage in case of any error
       const sessionsStr = localStorage.getItem(this.SESSIONS_KEY);
       return sessionsStr ? JSON.parse(sessionsStr) : [];
+    }
+  }
+  
+  // Helper method to safely parse JSON
+  private static tryParseJson(jsonString: string): any {
+    try {
+      return JSON.parse(jsonString);
+    } catch (e) {
+      return [];
     }
   }
   
@@ -107,10 +123,9 @@ export class SessionService {
           creator_id: session.creator.id,
           creator_name: session.creator.name,
           creator_profile_pic: session.creator.profilePic,
-          // Store complex objects as JSON
-          requests: JSON.stringify(session.requests),
-          accepted: JSON.stringify(session.accepted),
-          ratings: JSON.stringify(session.ratings),
+          creator_requests: JSON.stringify(session.requests),
+          creator_accepted: JSON.stringify(session.accepted),
+          creator_ratings: JSON.stringify(session.ratings),
           // Default values for required fields
           experience_level: 'intermediate',
           max_participants: 10
@@ -161,10 +176,10 @@ export class SessionService {
         creator_id: user.id,
         creator_name: user.name,
         creator_profile_pic: user.profilePic,
-        // Store complex objects as JSON
-        requests: JSON.stringify(newSession.requests),
-        accepted: JSON.stringify(newSession.accepted),
-        ratings: JSON.stringify(newSession.ratings),
+        // Store complex objects in custom fields
+        creator_requests: JSON.stringify(newSession.requests),
+        creator_accepted: JSON.stringify(newSession.accepted),
+        creator_ratings: JSON.stringify(newSession.ratings),
         // Default values for required fields
         experience_level: 'intermediate',
         max_participants: 10
@@ -197,8 +212,8 @@ export class SessionService {
     }
   }
   
-  static getSessionById(id: string): GymSession | undefined {
-    const sessions = this.getSessions();
+  static async getSessionById(id: string): Promise<GymSession | undefined> {
+    const sessions = await this.getSessions();
     return sessions.find(s => s.id === id);
   }
   
@@ -233,7 +248,7 @@ export class SessionService {
       const { error } = await supabase
         .from('gym_sessions')
         .update({
-          requests: JSON.stringify(session.requests)
+          creator_requests: JSON.stringify(session.requests)
         })
         .eq('id', sessionId);
         

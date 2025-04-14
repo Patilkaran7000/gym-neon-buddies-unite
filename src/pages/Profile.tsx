@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -44,29 +43,33 @@ const Profile = () => {
     };
   }, [navigate, currentUser]);
   
-  const loadUserSessions = () => {
+  const loadUserSessions = async () => {
     if (!currentUser) return;
     
-    const allSessions = SessionService.getSessions();
-    
-    // Filter sessions created by user
-    const created = allSessions.filter(session => 
-      session.creator.id === currentUser.id
-    );
-    
-    // Filter sessions where user is accepted
-    const joined = allSessions.filter(session => 
-      session.accepted.some(user => user.userId === currentUser.id)
-    );
-    
-    // Filter sessions where user has requested to join
-    const requested = allSessions.filter(session => 
-      session.requests.some(user => user.userId === currentUser.id)
-    );
-    
-    setMySessions(created);
-    setJoinedSessions(joined);
-    setRequestedSessions(requested);
+    try {
+      const allSessions = await SessionService.getSessions();
+      
+      // Filter sessions created by user
+      const created = allSessions.filter(session => 
+        session.creator.id === currentUser.id
+      );
+      
+      // Filter sessions where user is accepted
+      const joined = allSessions.filter(session => 
+        session.accepted.some(user => user.userId === currentUser.id)
+      );
+      
+      // Filter sessions where user has requested to join
+      const requested = allSessions.filter(session => 
+        session.requests.some(user => user.userId === currentUser.id)
+      );
+      
+      setMySessions(created);
+      setJoinedSessions(joined);
+      setRequestedSessions(requested);
+    } catch (error) {
+      console.error('Error loading user sessions:', error);
+    }
   };
   
   const handleLogout = () => {
