@@ -19,7 +19,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { supabase } from '@/integrations/supabase/client';
 
 interface SessionCardProps {
   session: GymSession;
