@@ -11,6 +11,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface SessionContentProps {
   session: GymSession;
@@ -32,10 +39,15 @@ export const SessionContent = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const navigate = useNavigate();
   const [isRatingHovered, setIsRatingHovered] = useState(0);
+  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  const [selectedRating, setSelectedRating] = useState(0);
 
   const handleRate = async (rating: number) => {
     try {
+      // Update UI immediately for better feedback
+      setUserRating(rating);
       await onRate(rating);
+      setIsRatingDialogOpen(false);
     } catch (error) {
       console.error('Error rating session:', error);
     }
@@ -85,22 +97,26 @@ export const SessionContent = ({
                     </span>
                   </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-64">
-                  <h4 className="font-semibold mb-2">Ratings</h4>
-                  {session.ratings.map((rating, index) => (
-                    <div key={index} className="flex items-center gap-2 mb-2">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">{rating.userId}</span>
-                      <div className="flex ml-auto">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star 
-                            key={star}
-                            className={`h-3 w-3 ${star <= rating.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
-                          />
-                        ))}
+                <PopoverContent className="w-64 p-3">
+                  <h4 className="font-semibold mb-2">Ratings & Reviews</h4>
+                  {session.ratings.length > 0 ? (
+                    session.ratings.map((rating, index) => (
+                      <div key={index} className="flex items-center gap-2 mb-2 p-2 rounded hover:bg-gray-50">
+                        <User className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{rating.userId}</span>
+                        <div className="flex ml-auto">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star 
+                              key={star}
+                              className={`h-3 w-3 ${star <= rating.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">No ratings yet</p>
+                  )}
                 </PopoverContent>
               </Popover>
             ) : (
@@ -122,12 +138,60 @@ export const SessionContent = ({
                     }`}
                     onMouseEnter={() => setIsRatingHovered(star)}
                     onMouseLeave={() => setIsRatingHovered(0)}
-                    onClick={() => handleRate(star)}
+                    onClick={() => {
+                      setSelectedRating(star);
+                      setIsRatingDialogOpen(true);
+                    }}
                   />
                 ))}
               </div>
             </div>
           )}
+          
+          {/* Rating confirmation dialog */}
+          <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Rate this session</DialogTitle>
+                <DialogDescription>
+                  Your rating helps others find great workout sessions.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex flex-col items-center gap-4 py-4">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star 
+                      key={star} 
+                      className={`h-8 w-8 cursor-pointer transition-colors ${
+                        star <= (isRatingHovered || selectedRating) 
+                          ? 'text-yellow-500 fill-yellow-500' 
+                          : 'text-gray-300 hover:text-yellow-300'
+                      }`}
+                      onMouseEnter={() => setIsRatingHovered(star)}
+                      onMouseLeave={() => setIsRatingHovered(0)}
+                      onClick={() => setSelectedRating(star)}
+                    />
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsRatingDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => handleRate(selectedRating)}
+                    className="bg-neon-purple hover:bg-neon-purple/90"
+                  >
+                    Submit Rating
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 

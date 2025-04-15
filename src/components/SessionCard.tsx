@@ -58,29 +58,35 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     }
     
     try {
+      const updatedSession = { 
+        ...currentSession,
+        requests: [
+          ...currentSession.requests,
+          {
+            userId: currentUser.id,
+            name: currentUser.name,
+            profilePic: currentUser.profilePic
+          }
+        ]
+      };
+      
+      setCurrentSession(updatedSession);
+      setStatus('requested');
+      
       const success = await SessionService.requestToJoin(currentSession.id, currentUser);
       
       if (success) {
-        const updatedSession = { 
-          ...currentSession,
-          requests: [
-            ...currentSession.requests,
-            {
-              userId: currentUser.id,
-              name: currentUser.name,
-              profilePic: currentUser.profilePic
-            }
-          ]
-        };
-        
-        setCurrentSession(updatedSession);
-        setStatus('requested');
-        
         if (onUpdate) onUpdate();
+      } else {
+        setCurrentSession(session);
+        setStatus(SessionService.getUserSessionStatus(session, currentUser.id));
+        throw new Error("Failed to request join");
       }
     } catch (error) {
       console.error('Error requesting to join:', error);
-      throw error;
+      toast("Request failed", {
+        description: "There was a problem with your request. Please try again.",
+      });
     }
   };
 

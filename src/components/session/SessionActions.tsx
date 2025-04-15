@@ -18,13 +18,19 @@ export const SessionActions = ({ status: initialStatus, isPastSession, onRequest
   const handleRequestJoin = async () => {
     try {
       setIsRequesting(true);
-      await onRequestJoin();
+      // Update the UI immediately to show feedback
       setStatus('requested');
+      
+      // Then make the actual request
+      await onRequestJoin();
+      
       toast("Request sent!", {
         description: "Your request to join this session has been sent",
       });
     } catch (error) {
       console.error('Error requesting to join:', error);
+      // Revert the status if the request fails
+      setStatus('none');
       toast("Request failed", {
         description: "There was a problem with your request",
       });
@@ -45,13 +51,11 @@ export const SessionActions = ({ status: initialStatus, isPastSession, onRequest
         </Button>
       )}
       {status === 'requested' && (
-        <Button 
-          variant="outline" 
-          className="w-full" 
-          disabled
+        <Badge 
+          className="w-full flex justify-center py-2 bg-amber-500"
         >
           Request Pending
-        </Button>
+        </Badge>
       )}
       {status === 'accepted' && !isPastSession && (
         <Badge 
