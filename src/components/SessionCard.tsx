@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
@@ -17,6 +16,7 @@ interface SessionCardProps {
 }
 
 const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
+  const [currentSession, setCurrentSession] = useState<GymSession>(session);
   const [status, setStatus] = useState<'creator' | 'accepted' | 'requested' | 'none'>('none');
   const [currentUser, setCurrentUser] = useState<User | null>(AuthService.getCurrentUserSync());
   const [averageRating, setAverageRating] = useState(0);
@@ -36,6 +36,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
   }, [currentUser]);
   
   useEffect(() => {
+    setCurrentSession(session);
     if (currentUser) {
       setStatus(SessionService.getUserSessionStatus(session, currentUser.id));
       setCanRate(SessionService.canRateSession(session, currentUser.id));
@@ -57,20 +58,29 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     }
     
     try {
-      const success = await SessionService.requestToJoin(session.id, currentUser);
+      const success = await SessionService.requestToJoin(currentSession.id, currentUser);
       
       if (success) {
-        toast("Request sent!", {
-          description: "Your request to join this session has been sent",
-        });
+        const updatedSession = { 
+          ...currentSession,
+          requests: [
+            ...currentSession.requests,
+            {
+              userId: currentUser.id,
+              name: currentUser.name,
+              profilePic: currentUser.profilePic
+            }
+          ]
+        };
+        
+        setCurrentSession(updatedSession);
         setStatus('requested');
+        
         if (onUpdate) onUpdate();
       }
     } catch (error) {
       console.error('Error requesting to join:', error);
-      toast("Request failed", {
-        description: "There was a problem with your request",
-      });
+      throw error;
     }
   };
 
@@ -78,7 +88,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     if (!currentUser) return;
     
     try {
-      const success = await SessionService.acceptRequest(session.id, userId, currentUser);
+      const success = await SessionService.acceptRequest(currentSession.id, userId, currentUser);
       
       if (success) {
         toast("Request accepted!", {
@@ -98,7 +108,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     if (!currentUser) return;
     
     try {
-      const success = await SessionService.rejectRequest(session.id, userId, currentUser);
+      const success = await SessionService.rejectRequest(currentSession.id, userId, currentUser);
       
       if (success) {
         toast("Request rejected", {
@@ -118,7 +128,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     if (!currentUser) return;
     
     try {
-      const success = await SessionService.rateSession(session.id, rating, currentUser);
+      const success = await SessionService.rateSession(currentSession.id, rating, currentUser);
       
       if (success) {
         toast("Session rated!", {
@@ -139,7 +149,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     if (!currentUser) return;
     
     try {
-      const success = await SessionService.deleteSession(session.id, currentUser);
+      const success = await SessionService.deleteSession(currentSession.id, currentUser);
       
       if (success) {
         toast("Session deleted", {
@@ -159,20 +169,20 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     }
   };
 
-  const isPastSession = isPast(new Date(session.datetime));
+  const isPastSession = isPast(new Date(currentSession.datetime));
   const isCreator = status === 'creator';
 
   return (
     <Card className="w-full transition-all hover:shadow-lg group">
       <SessionHeader 
-        session={session}
+        session={currentSession}
         isCreator={isCreator}
         isPastSession={isPastSession}
         onDelete={handleDeleteSession}
       />
       
       <SessionContent 
-        session={session}
+        session={currentSession}
         averageRating={averageRating}
         canRate={canRate}
         userRating={userRating}
@@ -180,9 +190,9 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
         status={status}
       />
 
-      {isCreator && session.requests.length > 0 && (
+      {isCreator && currentSession.requests.length > 0 && (
         <SessionRequestsList 
-          requests={session.requests}
+          requests={currentSession.requests}
           onAccept={handleAccept}
           onReject={handleReject}
         />

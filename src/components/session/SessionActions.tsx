@@ -2,7 +2,7 @@
 import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { GymSession } from "@/services/SessionService";
+import { useState } from "react";
 import { toast } from "@/lib/toast";
 
 interface SessionActionsProps {
@@ -11,15 +11,25 @@ interface SessionActionsProps {
   onRequestJoin: () => Promise<void>;
 }
 
-export const SessionActions = ({ status, isPastSession, onRequestJoin }: SessionActionsProps) => {
+export const SessionActions = ({ status: initialStatus, isPastSession, onRequestJoin }: SessionActionsProps) => {
+  const [status, setStatus] = useState(initialStatus);
+  const [isRequesting, setIsRequesting] = useState(false);
+
   const handleRequestJoin = async () => {
     try {
+      setIsRequesting(true);
       await onRequestJoin();
+      setStatus('requested');
+      toast("Request sent!", {
+        description: "Your request to join this session has been sent",
+      });
     } catch (error) {
       console.error('Error requesting to join:', error);
       toast("Request failed", {
         description: "There was a problem with your request",
       });
+    } finally {
+      setIsRequesting(false);
     }
   };
 
@@ -29,8 +39,9 @@ export const SessionActions = ({ status, isPastSession, onRequestJoin }: Session
         <Button 
           onClick={handleRequestJoin}
           className="w-full bg-neon-purple hover:bg-neon-purple/90"
+          disabled={isRequesting}
         >
-          Request to Join
+          {isRequesting ? 'Requesting...' : 'Request to Join'}
         </Button>
       )}
       {status === 'requested' && (
