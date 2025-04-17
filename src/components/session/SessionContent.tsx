@@ -41,11 +41,12 @@ export const SessionContent = ({
   const [isRatingHovered, setIsRatingHovered] = useState(0);
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState(0);
+  const [localUserRating, setLocalUserRating] = useState(userRating);
 
   const handleRate = async (rating: number) => {
     try {
       // Update UI immediately for better feedback
-      setUserRating(rating);
+      setLocalUserRating(rating);
       await onRate(rating);
       setIsRatingDialogOpen(false);
     } catch (error) {
@@ -132,7 +133,7 @@ export const SessionContent = ({
                   <Star 
                     key={star} 
                     className={`h-5 w-5 cursor-pointer transition-colors ${
-                      star <= (isRatingHovered || userRating) 
+                      star <= (isRatingHovered || localUserRating || userRating) 
                         ? 'text-yellow-500 fill-yellow-500' 
                         : 'text-gray-300 hover:text-yellow-300'
                     }`}

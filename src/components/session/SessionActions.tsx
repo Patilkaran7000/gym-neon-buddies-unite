@@ -2,7 +2,7 @@
 import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/lib/toast";
 
 interface SessionActionsProps {
@@ -14,6 +14,11 @@ interface SessionActionsProps {
 export const SessionActions = ({ status: initialStatus, isPastSession, onRequestJoin }: SessionActionsProps) => {
   const [status, setStatus] = useState(initialStatus);
   const [isRequesting, setIsRequesting] = useState(false);
+  
+  // This useEffect ensures the component status stays in sync with props
+  useEffect(() => {
+    setStatus(initialStatus);
+  }, [initialStatus]);
 
   const handleRequestJoin = async () => {
     try {

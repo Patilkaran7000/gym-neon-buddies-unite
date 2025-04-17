@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
@@ -58,6 +59,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     }
     
     try {
+      // Create an optimistic update for the UI
       const updatedSession = { 
         ...currentSession,
         requests: [
@@ -70,16 +72,19 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
         ]
       };
       
+      // Update local state to give immediate feedback
       setCurrentSession(updatedSession);
-      setStatus('requested');
+      
+      // The status update is now handled by the SessionActions component
+      // and we don't need to set it here anymore
       
       const success = await SessionService.requestToJoin(currentSession.id, currentUser);
       
       if (success) {
         if (onUpdate) onUpdate();
       } else {
+        // Revert changes if the request failed
         setCurrentSession(session);
-        setStatus(SessionService.getUserSessionStatus(session, currentUser.id));
         throw new Error("Failed to request join");
       }
     } catch (error) {
