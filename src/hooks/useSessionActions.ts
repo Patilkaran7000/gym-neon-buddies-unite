@@ -67,19 +67,39 @@ export const useSessionActions = (
     if (!currentUser) return;
     
     try {
+      // First update UI optimistically
+      const requestIndex = currentSession.requests.findIndex(r => r.userId === userId);
+      if (requestIndex === -1) return;
+      
+      const request = currentSession.requests[requestIndex];
+      
+      const updatedSession = {
+        ...currentSession,
+        requests: currentSession.requests.filter((_, index) => index !== requestIndex),
+        accepted: [...currentSession.accepted, request]
+      };
+      
+      setCurrentSession(updatedSession);
+      
+      // Then make the API call
       const success = await SessionService.acceptRequest(currentSession.id, userId, currentUser);
       
       if (success) {
         toast("Request accepted!", {
           description: "You've accepted the request to join",
         });
-        if (onUpdate) onUpdate();
+      } else {
+        // Revert UI changes if the API call fails
+        setCurrentSession(currentSession);
+        throw new Error("Failed to accept request");
       }
     } catch (error) {
       console.error('Error accepting request:', error);
       toast("Accept failed", {
         description: "There was a problem accepting the request",
       });
+      // Revert UI changes on error
+      setCurrentSession(currentSession);
     }
   };
 
@@ -87,19 +107,33 @@ export const useSessionActions = (
     if (!currentUser) return;
     
     try {
+      // First update UI optimistically
+      const updatedSession = {
+        ...currentSession,
+        requests: currentSession.requests.filter(r => r.userId !== userId)
+      };
+      
+      setCurrentSession(updatedSession);
+      
+      // Then make the API call
       const success = await SessionService.rejectRequest(currentSession.id, userId, currentUser);
       
       if (success) {
         toast("Request rejected", {
           description: "You've rejected the request to join",
         });
-        if (onUpdate) onUpdate();
+      } else {
+        // Revert UI changes if the API call fails
+        setCurrentSession(currentSession);
+        throw new Error("Failed to reject request");
       }
     } catch (error) {
       console.error('Error rejecting request:', error);
       toast("Reject failed", {
         description: "There was a problem rejecting the request",
       });
+      // Revert UI changes on error
+      setCurrentSession(currentSession);
     }
   };
 
