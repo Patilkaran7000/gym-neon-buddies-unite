@@ -23,7 +23,7 @@ export const SessionActions = ({ status: initialStatus, isPastSession, onRequest
   const handleRequestJoin = async () => {
     try {
       setIsRequesting(true);
-      // Update the UI immediately to show feedback
+      // Update the UI immediately for a better user experience
       setStatus('requested');
       
       // Then make the actual request

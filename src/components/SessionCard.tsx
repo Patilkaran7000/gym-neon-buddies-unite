@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { toast } from "@/lib/toast";
@@ -38,8 +37,10 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
   
   useEffect(() => {
     setCurrentSession(session);
+    
     if (currentUser) {
-      setStatus(SessionService.getUserSessionStatus(session, currentUser.id));
+      const userStatus = SessionService.getUserSessionStatus(session, currentUser.id);
+      setStatus(userStatus);
       setCanRate(SessionService.canRateSession(session, currentUser.id));
       
       const userRating = session.ratings.find(r => r.userId === currentUser.id)?.rating || 0;
@@ -59,7 +60,6 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
     }
     
     try {
-      // Create an optimistic update for the UI
       const updatedSession = { 
         ...currentSession,
         requests: [
@@ -72,18 +72,17 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
         ]
       };
       
-      // Update local state to give immediate feedback
       setCurrentSession(updatedSession);
-      
-      // The status update is now handled by the SessionActions component
-      // and we don't need to set it here anymore
       
       const success = await SessionService.requestToJoin(currentSession.id, currentUser);
       
       if (success) {
-        if (onUpdate) onUpdate();
+        setStatus('requested');
+        
+        if (onUpdate) {
+          setTimeout(() => onUpdate(), 500);
+        }
       } else {
-        // Revert changes if the request failed
         setCurrentSession(session);
         throw new Error("Failed to request join");
       }
@@ -92,6 +91,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
       toast("Request failed", {
         description: "There was a problem with your request. Please try again.",
       });
+      setStatus(SessionService.getUserSessionStatus(session, currentUser.id));
     }
   };
 
