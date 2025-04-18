@@ -23,6 +23,7 @@ export const useSessionActions = (
     }
     
     try {
+      // First update the UI optimistically
       const updatedSession = { 
         ...currentSession,
         requests: [
@@ -36,17 +37,19 @@ export const useSessionActions = (
       };
       
       setCurrentSession(updatedSession);
+      setStatus('requested');
       
+      // Then make the actual request to the backend
       const success = await SessionService.requestToJoin(currentSession.id, currentUser);
       
       if (success) {
-        setStatus('requested');
-        
-        if (onUpdate) {
-          setTimeout(() => onUpdate(), 500);
-        }
+        toast("Request sent!", {
+          description: "Your request to join this session has been sent",
+        });
       } else {
+        // If the request fails, revert the UI changes
         setCurrentSession(currentSession);
+        setStatus(SessionService.getUserSessionStatus(currentSession, currentUser.id));
         throw new Error("Failed to request join");
       }
     } catch (error) {
@@ -54,6 +57,8 @@ export const useSessionActions = (
       toast("Request failed", {
         description: "There was a problem with your request. Please try again.",
       });
+      // Revert UI changes on error
+      setCurrentSession(currentSession);
       setStatus(SessionService.getUserSessionStatus(currentSession, currentUser.id));
     }
   };

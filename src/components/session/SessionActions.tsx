@@ -3,7 +3,6 @@ import { CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
-import { toast } from "@/lib/toast";
 
 interface SessionActionsProps {
   status: 'creator' | 'accepted' | 'requested' | 'none';
@@ -23,22 +22,9 @@ export const SessionActions = ({ status: initialStatus, isPastSession, onRequest
   const handleRequestJoin = async () => {
     try {
       setIsRequesting(true);
-      // Update the UI immediately for a better user experience
-      setStatus('requested');
-      
-      // Then make the actual request
       await onRequestJoin();
-      
-      toast("Request sent!", {
-        description: "Your request to join this session has been sent",
-      });
     } catch (error) {
       console.error('Error requesting to join:', error);
-      // Revert the status if the request fails
-      setStatus('none');
-      toast("Request failed", {
-        description: "There was a problem with your request",
-      });
     } finally {
       setIsRequesting(false);
     }
