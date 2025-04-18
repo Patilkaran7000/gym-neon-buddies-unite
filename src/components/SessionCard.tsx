@@ -18,6 +18,7 @@ interface SessionCardProps {
 
 const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(AuthService.getCurrentUserSync());
+  const [showRequests, setShowRequests] = useState(false);
   
   useEffect(() => {
     const loadUser = async () => {
@@ -51,6 +52,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
 
   const isPastSession = isPast(new Date(currentSession.datetime));
   const isCreator = status === 'creator';
+  const toggleRequests = () => setShowRequests(prev => !prev);
 
   return (
     <Card className="w-full transition-all hover:shadow-lg group">
@@ -70,7 +72,7 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
         status={status}
       />
 
-      {isCreator && currentSession.requests.length > 0 && (
+      {isCreator && currentSession.requests.length > 0 && showRequests && (
         <SessionRequestsList 
           requests={currentSession.requests}
           onAccept={handleAccept}
@@ -82,6 +84,9 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
         status={status}
         isPastSession={isPastSession}
         onRequestJoin={handleRequestJoin}
+        showRequests={showRequests}
+        requestCount={isCreator ? currentSession.requests.length : 0}
+        onToggleRequests={toggleRequests}
       />
     </Card>
   );

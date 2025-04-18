@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { AuthService, User } from "@/services/AuthService";
 import { Dumbbell, LogOut, User as UserIcon, Home, Plus } from 'lucide-react';
+import { toast } from "@/lib/toast";
 
 const Navbar = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(AuthService.getCurrentUserSync());
@@ -37,10 +38,23 @@ const Navbar = () => {
   
   const handleLogout = async () => {
     try {
+      // Clear cached user before logout to prevent UI issues
+      AuthService.updateCachedUser(null);
+      
+      // Then perform the actual logout operation
       await AuthService.logout();
+      
+      toast("Logged out successfully", {
+        description: "You have been logged out of your account"
+      });
+      
+      // Navigate after all logout operations are complete
       navigate('/login');
     } catch (error) {
       console.error("Logout error:", error);
+      toast("Logout failed", {
+        description: "There was a problem logging out. Please try again."
+      });
     }
   };
   

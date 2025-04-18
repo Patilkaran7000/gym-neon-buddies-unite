@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/toast";
 
@@ -147,8 +146,19 @@ export class AuthService {
   
   // Sign out
   static async logout(): Promise<void> {
+    // First clear the cached user
     this.updateCachedUser(null);
-    await supabase.auth.signOut();
+    
+    // Then sign out from Supabase
+    try {
+      await supabase.auth.signOut();
+      // Dispatch a storage event to notify other tabs
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Throw the error so it can be caught by the UI
+      throw error;
+    }
   }
   
   // Set up auth state change listener

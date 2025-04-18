@@ -46,6 +46,7 @@ export const useSessionActions = (
         toast("Request sent!", {
           description: "Your request to join this session has been sent",
         });
+        if (onUpdate) onUpdate();
       } else {
         // If the request fails, revert the UI changes
         setCurrentSession(currentSession);
