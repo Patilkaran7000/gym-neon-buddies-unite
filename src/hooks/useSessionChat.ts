@@ -25,7 +25,13 @@ export function useSessionChat(sessionId: string, userId: string, userName: stri
   const sendMessage = () => {
     if (!message.trim()) return;
     setLoading(true);
-    ChatService.sendMessage(sessionId, message, {id: userId, name: userName, profilePic: userProfilePic});
+    // Fix: Include email property (empty string as fallback) to match User interface
+    ChatService.sendMessage(sessionId, message, {
+      id: userId, 
+      name: userName, 
+      profilePic: userProfilePic,
+      email: "" // Adding the required email property
+    });
     setMessage("");
     setLoading(false);
   };
