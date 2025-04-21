@@ -58,9 +58,10 @@ export const SessionActions = ({
       {/* None/requested: show request button */}
       {status === 'none' && !isPastSession && (
         <Button
-          onClick={handleRequestJoin}
+          onClick={(e) => handleRequestJoin(e)}
           disabled={loading}
           className="w-full flex gap-2 items-center"
+          type="button" // Explicitly set type to button to prevent form submission
         >
           <UserPlus className="h-4 w-4" />
           Request to Join

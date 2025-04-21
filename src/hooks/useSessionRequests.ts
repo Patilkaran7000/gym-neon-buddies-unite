@@ -7,7 +7,12 @@ import { toast } from "@/lib/toast";
 export function useSessionRequests(sessionId: string, onUpdate?: () => void) {
   const [loading, setLoading] = useState(false);
 
-  const handleRequestJoin = async () => {
+  const handleRequestJoin = async (e?: React.MouseEvent) => {
+    // Prevent default browser action if event is provided
+    if (e) {
+      e.preventDefault();
+    }
+    
     setLoading(true);
     const currentUser = AuthService.getCurrentUserSync();
     if (!currentUser) {
