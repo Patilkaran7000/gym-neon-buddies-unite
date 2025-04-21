@@ -9,6 +9,7 @@ import { SessionContent } from './session/SessionContent';
 import { SessionActions } from './session/SessionActions';
 import { useSessionManagement } from '@/hooks/useSessionManagement';
 import { useSessionActions } from '@/hooks/useSessionActions';
+import { SessionChat } from './session/SessionChat';
 
 interface SessionCardProps {
   session: GymSession;
@@ -47,15 +48,18 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
   const isPastSession = isPast(new Date(currentSession.datetime));
   const isCreator = status === 'creator';
 
+  // Allow chat for accepted users or creator (not for requested or none)
+  const canChat = (status === 'accepted' || status === 'creator') && !isPastSession && currentUser;
+
   return (
     <Card className="w-full transition-all hover:shadow-lg group">
-      <SessionHeader 
+      <SessionHeader
         session={currentSession}
         isCreator={isCreator}
         isPastSession={isPastSession}
         onDelete={handleDeleteSession}
       />
-      <SessionContent 
+      <SessionContent
         session={currentSession}
         averageRating={averageRating}
         canRate={canRate}
@@ -63,13 +67,23 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
         onRate={handleRate}
         status={status}
       />
-      <SessionActions 
+      <SessionActions
         status={status}
         isPastSession={isPastSession}
+        sessionId={currentSession.id}
+        currentUserId={currentUser?.id}
+        onUpdate={onUpdate}
       />
+      {canChat && currentUser && (
+        <SessionChat
+          sessionId={currentSession.id}
+          userId={currentUser.id}
+          userName={currentUser.name}
+          userProfilePic={currentUser.profilePic}
+        />
+      )}
     </Card>
   );
 };
 
 export default SessionCard;
-
