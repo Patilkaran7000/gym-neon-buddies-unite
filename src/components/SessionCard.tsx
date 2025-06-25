@@ -52,36 +52,39 @@ const SessionCard = ({ session, onUpdate }: SessionCardProps) => {
   const canChat = (status === 'accepted' || status === 'creator') && !isPastSession && currentUser;
 
   return (
-    <Card className="w-full transition-all hover:shadow-lg group">
-      <SessionHeader
-        session={currentSession}
-        isCreator={isCreator}
-        isPastSession={isPastSession}
-        onDelete={handleDeleteSession}
-      />
-      <SessionContent
-        session={currentSession}
-        averageRating={averageRating}
-        canRate={canRate}
-        userRating={userRating}
-        onRate={handleRate}
-        status={status}
-      />
-      <SessionActions
-        status={status}
-        isPastSession={isPastSession}
-        sessionId={currentSession.id}
-        currentUserId={currentUser?.id}
-        onUpdate={onUpdate}
-      />
-      {canChat && currentUser && (
-        <SessionChat
-          sessionId={currentSession.id}
-          userId={currentUser.id}
-          userName={currentUser.name}
-          userProfilePic={currentUser.profilePic}
+    <Card className="w-full glass-card transition-all duration-500 hover-lift glow-effect group overflow-hidden border-glow">
+      <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/5 via-transparent to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <div className="relative z-10">
+        <SessionHeader
+          session={currentSession}
+          isCreator={isCreator}
+          isPastSession={isPastSession}
+          onDelete={handleDeleteSession}
         />
-      )}
+        <SessionContent
+          session={currentSession}
+          averageRating={averageRating}
+          canRate={canRate}
+          userRating={userRating}
+          onRate={handleRate}
+          status={status}
+        />
+        <SessionActions
+          status={status}
+          isPastSession={isPastSession}
+          sessionId={currentSession.id}
+          currentUserId={currentUser?.id}
+          onUpdate={onUpdate}
+        />
+        {canChat && currentUser && (
+          <SessionChat
+            sessionId={currentSession.id}
+            userId={currentUser.id}
+            userName={currentUser.name}
+            userProfilePic={currentUser.profilePic}
+          />
+        )}
+      </div>
     </Card>
   );
 };

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
-import { Dumbbell, Search, Users } from 'lucide-react';
+import { Dumbbell, Search, Users, Zap, Target, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,27 @@ const HomePage = () => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Scroll animation effect
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+
+    const scrollElements = document.querySelectorAll('.scroll-fade-in');
+    scrollElements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
   
   // Load sessions
   useEffect(() => {
@@ -109,85 +130,122 @@ const HomePage = () => {
   const workoutTypes = ['cardio', 'strength', 'yoga', 'hiit', 'crossfit'];
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen gradient-bg particle-bg">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-neon-purple/90 to-neon-blue/80 rounded-2xl p-8 mb-8 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1571902943202-507ec2618e8f?ixlib=rb-4.0.3')] bg-cover opacity-20 mix-blend-overlay"></div>
+        <div className="glass-card rounded-3xl p-12 mb-12 text-white relative overflow-hidden animate-slide-in-up">
+          <div className="cyber-grid absolute inset-0 opacity-30"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-neon-purple/20 via-neon-pink/20 to-neon-blue/20"></div>
           
-          <div className="relative z-10 max-w-2xl">
-            <h1 className="text-4xl font-bold mb-4">Find Your Perfect Gym Buddy</h1>
-            <p className="text-xl mb-6 opacity-90">
-              Connect with fitness enthusiasts, join workout sessions, and achieve your goals together.
+          <div className="relative z-10 max-w-4xl mx-auto text-center">
+            <h1 className="text-6xl font-bold mb-6 text-glow animate-scale-in">
+              Find Your Perfect 
+              <span className="gradient-text block mt-2">Gym Buddy</span>
+            </h1>
+            <p className="text-2xl mb-8 opacity-90 animate-slide-in-up" style={{animationDelay: '0.2s'}}>
+              Connect with fitness enthusiasts, join workout sessions, and achieve your goals together in the future of fitness.
             </p>
             
             {!isLoggedIn ? (
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-6 justify-center animate-slide-in-up" style={{animationDelay: '0.4s'}}>
                 <Link to="/signup">
-                  <Button size="lg" className="bg-white text-neon-purple hover:bg-gray-100">
-                    Join Now
+                  <Button size="lg" className="bg-gradient-to-r from-neon-purple to-neon-pink hover:from-neon-purple/80 hover:to-neon-pink/80 text-white border-0 px-8 py-4 text-lg glow-effect hover-lift">
+                    <Zap className="mr-2 h-6 w-6" />
+                    Join the Revolution
                   </Button>
                 </Link>
                 <Link to="/login">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                  <Button size="lg" variant="outline" className="border-2 border-white/30 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm px-8 py-4 text-lg hover-lift">
                     Login
                   </Button>
                 </Link>
               </div>
             ) : (
               <Link to="/create">
-                <Button size="lg" className="bg-white text-neon-purple hover:bg-gray-100 flex items-center gap-2">
-                  <Dumbbell className="h-5 w-5" />
+                <Button size="lg" className="bg-gradient-to-r from-neon-blue to-neon-purple hover:from-neon-blue/80 hover:to-neon-purple/80 text-white border-0 px-8 py-4 text-lg glow-effect hover-lift animate-slide-in-up" style={{animationDelay: '0.4s'}}>
+                  <Dumbbell className="mr-2 h-6 w-6" />
                   Create Workout Session
                 </Button>
               </Link>
             )}
           </div>
           
-          <div className="hidden md:block absolute bottom-0 right-0">
-            <div className="animate-float">
-              <Users className="h-32 w-32 text-white/30" />
+          {/* Floating elements */}
+          <div className="absolute top-10 right-10 floating-animation">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-neon-purple/30 to-neon-pink/30 border border-white/20"></div>
+          </div>
+          <div className="absolute bottom-10 left-10 floating-animation" style={{animationDelay: '2s'}}>
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-neon-blue/30 to-neon-purple/30 border border-white/20"></div>
+          </div>
+          <div className="absolute top-1/2 right-1/4 floating-animation" style={{animationDelay: '4s'}}>
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-neon-pink/30 to-neon-blue/30 border border-white/20"></div>
+          </div>
+        </div>
+
+        {/* Features Section */}
+        <div className="mb-16 scroll-fade-in">
+          <h2 className="text-4xl font-bold text-center mb-12 text-white text-glow">Why Choose GymBuddy?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="glass-card p-8 rounded-2xl text-center hover-lift glow-effect">
+              <Target className="h-16 w-16 mx-auto mb-4 text-neon-purple animate-glow-pulse" />
+              <h3 className="text-2xl font-bold mb-4 text-white">Goal-Oriented</h3>
+              <p className="text-gray-200">Find partners who share your fitness goals and workout intensity preferences.</p>
+            </div>
+            <div className="glass-card p-8 rounded-2xl text-center hover-lift glow-effect" style={{animationDelay: '0.2s'}}>
+              <Users className="h-16 w-16 mx-auto mb-4 text-neon-pink animate-glow-pulse" />
+              <h3 className="text-2xl font-bold mb-4 text-white">Community Driven</h3>
+              <p className="text-gray-200">Join a supportive community of fitness enthusiasts from around your area.</p>
+            </div>
+            <div className="glass-card p-8 rounded-2xl text-center hover-lift glow-effect" style={{animationDelay: '0.4s'}}>
+              <Award className="h-16 w-16 mx-auto mb-4 text-neon-blue animate-glow-pulse" />
+              <h3 className="text-2xl font-bold mb-4 text-white">Track Progress</h3>
+              <p className="text-gray-200">Monitor your progress and celebrate achievements with your workout partners.</p>
             </div>
           </div>
         </div>
         
         {/* Search and Filter */}
-        <div className="mb-8">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <Input
-              className="pl-10"
-              placeholder="Search sessions by title, location, or details..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {workoutTypes.map(type => (
-              <Badge
-                key={type}
-                variant={activeFilter === type ? "default" : "outline"}
-                className={`cursor-pointer capitalize ${
-                  activeFilter === type ? 'bg-neon-purple hover:bg-neon-purple/90' : ''
-                }`}
-                onClick={() => handleFilterClick(type)}
-              >
-                {type}
-              </Badge>
-            ))}
+        <div className="mb-12 scroll-fade-in">
+          <div className="glass-card p-6 rounded-2xl">
+            <div className="relative mb-6">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 h-6 w-6" />
+              <Input
+                className="pl-12 h-14 text-lg bg-white/10 border-white/20 text-white placeholder-white/50 backdrop-blur-sm focus:border-neon-purple focus:ring-neon-purple"
+                placeholder="Search sessions by title, location, or details..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              {workoutTypes.map((type, index) => (
+                <Badge
+                  key={type}
+                  variant={activeFilter === type ? "default" : "outline"}
+                  className={`cursor-pointer capitalize px-6 py-3 text-sm font-medium transition-all duration-300 hover-lift ${
+                    activeFilter === type 
+                      ? 'bg-gradient-to-r from-neon-purple to-neon-pink text-white border-0 glow-effect' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                  }`}
+                  onClick={() => handleFilterClick(type)}
+                  style={{animationDelay: `${index * 0.1}s`}}
+                >
+                  {type}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
         
         {/* Session Cards */}
-        <div className="mb-4 flex justify-between items-center">
-          <h2 className="text-2xl font-semibold">Available Sessions</h2>
+        <div className="mb-6 flex justify-between items-center scroll-fade-in">
+          <h2 className="text-3xl font-bold text-white text-glow">Available Sessions</h2>
           <Button 
             variant="ghost" 
             onClick={handleRefresh}
-            className="text-sm"
+            className="text-white hover:bg-white/10 backdrop-blur-sm border border-white/20 hover-lift"
             disabled={loading}
           >
             {loading ? 'Loading...' : 'Refresh'}
@@ -195,24 +253,30 @@ const HomePage = () => {
         </div>
         
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neon-purple"></div>
+          <div className="flex justify-center py-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-neon-purple"></div>
+              <div className="absolute inset-0 animate-ping rounded-full h-20 w-20 border border-neon-purple/20"></div>
+            </div>
           </div>
         ) : filteredSessions.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSessions.map(session => (
-              <SessionCard 
-                key={session.id} 
-                session={session} 
-                onUpdate={handleRefresh}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 scroll-fade-in">
+            {filteredSessions.map((session, index) => (
+              <div key={session.id} className="animate-slide-in-up" style={{animationDelay: `${index * 0.1}s`}}>
+                <SessionCard 
+                  session={session} 
+                  onUpdate={handleRefresh}
+                />
+              </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg shadow-sm">
-            <Dumbbell className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-            <h3 className="text-xl font-medium text-gray-700 mb-2">No sessions found</h3>
-            <p className="text-gray-500 mb-6">
+          <div className="text-center py-20 glass-card rounded-2xl scroll-fade-in">
+            <div className="floating-animation">
+              <Dumbbell className="mx-auto h-20 w-20 text-neon-purple mb-6" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-4">No sessions found</h3>
+            <p className="text-gray-200 text-lg mb-8">
               {searchTerm || activeFilter 
                 ? "Try adjusting your search or filters"
                 : "Be the first to create a workout session!"}
@@ -220,7 +284,7 @@ const HomePage = () => {
             
             {isLoggedIn && (
               <Link to="/create">
-                <Button className="bg-neon-purple hover:bg-neon-purple/90">
+                <Button className="bg-gradient-to-r from-neon-purple to-neon-pink hover:from-neon-purple/80 hover:to-neon-pink/80 text-white border-0 px-8 py-4 text-lg glow-effect hover-lift">
                   Create Session
                 </Button>
               </Link>
