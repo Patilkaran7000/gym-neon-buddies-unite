@@ -9,7 +9,119 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      gym_sessions: {
+        Row: {
+          created_at: string
+          creator_accepted: string | null
+          creator_id: string
+          creator_name: string | null
+          creator_profile_pic: string | null
+          creator_ratings: string | null
+          creator_requests: string | null
+          date: string
+          description: string | null
+          experience_level: string
+          id: string
+          location: string
+          max_participants: number
+          title: string
+          workout_type: string
+        }
+        Insert: {
+          created_at?: string
+          creator_accepted?: string | null
+          creator_id: string
+          creator_name?: string | null
+          creator_profile_pic?: string | null
+          creator_ratings?: string | null
+          creator_requests?: string | null
+          date: string
+          description?: string | null
+          experience_level: string
+          id?: string
+          location: string
+          max_participants: number
+          title: string
+          workout_type: string
+        }
+        Update: {
+          created_at?: string
+          creator_accepted?: string | null
+          creator_id?: string
+          creator_name?: string | null
+          creator_profile_pic?: string | null
+          creator_ratings?: string | null
+          creator_requests?: string | null
+          date?: string
+          description?: string | null
+          experience_level?: string
+          id?: string
+          location?: string
+          max_participants?: number
+          title?: string
+          workout_type?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          profile_pic: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          profile_pic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          profile_pic?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_requests: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "gym_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
